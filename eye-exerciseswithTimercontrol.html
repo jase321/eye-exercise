@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Near and Far Eye Exercise</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #e8f4ff;
+    color: #003366;
+    padding: 20px;
+  }
+  h1 { color: #004c99; }
+  #dot {
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    border-radius: 50%;
+    margin: 40px auto;
+  }
+  #dot.small {
+    width: 15px;
+    height: 15px;
+    background-color: #003366;
+  }
+  button {
+    margin: 10px;
+    padding: 10px 18px;
+    font-size: 16px;
+  }
+  #timer {
+    font-size: 20px;
+    margin-top: 10px;
+  }
+  input {
+    width: 60px;
+    padding: 4px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Near and Far Eye Exercise</h1>
+<p>Focus alternately on the <b>near</b> and <b>far</b> dots to relax your eyes.</p>
+
+<div>
+  <label>Near time (sec): <input type="number" id="nearTime" value="10" min="2"></label>
+  <label>Far time (sec): <input type="number" id="farTime" value="10" min="2"></label>
+</div>
+
+<div id="dot"></div>
+<div id="timer">Ready</div>
+
+<button onclick="startExercise()">Start</button>
+<button onclick="stopExercise()">Stop</button>
+
+<script>
+let timer = null;
+let phase = "near";
+let remaining = 0;
+let totalTime = 0;
+let sessionLimit = 5 * 60; // 5 minutes in seconds
+let audioCtx = null;
+let nearDuration = 10;
+let farDuration = 10;
+
+function startExercise() {
+  stopExercise(); // reset any previous timer
+  nearDuration = parseInt(document.getElementById("nearTime").value) || 10;
+  farDuration = parseInt(document.getElementById("farTime").value) || 10;
+  sessionLimit = 5 * 60; // total 5 minutes
+  totalTime = 0;
+  phase = "near";
+  remaining = nearDuration;
+  document.getElementById("dot").classList.remove("small");
+  updateDisplay();
+  beep();
+
+  timer = setInterval(() => {
+    remaining--;
+    totalTime++;
+    updateDisplay();
+
+    if (remaining <= 0) switchPhase();
+    if (totalTime >= sessionLimit) endSession();
+  }, 1000);
+}
+
+function switchPhase() {
+  if (phase === "near") {
+    phase = "far";
+    remaining = farDuration;
+    document.getElementById("dot").classList.add("small");
+  } else {
+    phase = "near";
+    remaining = nearDuration;
+    document.getElementById("dot").classList.remove("small");
+  }
+  beep();
+}
+
+function updateDisplay() {
+  document.getElementById("timer").textContent =
+    (phase === "near" ? "Near focus: " : "Far focus: ") + remaining + "s" +
+    " | Total: " + Math.floor(totalTime / 60) + ":" + String(totalTime % 60).padStart(2, '0');
+}
+
+function endSession() {
+  clearInterval(timer);
+  timer = null;
+  document.getElementById("timer").textContent = "✅ 5-minute session complete!";
+  document.getElementById("dot").classList.remove("small");
+  beep(3); // longer final beep
+}
+
+function stopExercise() {
+  clearInterval(timer);
+  timer = null;
+  document.getElementById("timer").textContent = "Stopped";
+  document.getElementById("dot").classList.remove("small");
+}
+
+function beep(times = 1) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < times; i++) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.value = 0.05;
+      osc.start(audioCtx.currentTime + i * 0.2);
+      osc.stop(audioCtx.currentTime + i * 0.2 + 0.15);
+    }
+  } catch (e) {
+    console.log("Beep not supported");
+  }
+}
+</script>
+
+<p style="margin-top:30px; font-size:14px;">
+Tip: Look at your finger (~30 cm away) for “near” focus, then at a distant object (like a wall or tree) for “far” focus.<br>
+Repeat daily. The session automatically ends after 5 minutes with a final beep.<br>
+Stop immediately if your eyes feel strained or tired.
+</p>
+
+</body>
+</html>
